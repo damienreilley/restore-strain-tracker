@@ -83,9 +83,9 @@ tr.fav-row{background:#eff6ff!important}
   <div class="tab active" data-tab="all">All Products</div>
   <div class="tab" data-tab="favs">★ Favorites</div>
   <div class="tab" data-tab="tried">Tried</div>
+  <div class="tab" data-tab="notes">Notes</div>
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
     <button class="export-btn" id="exportBtn">Export CSV</button>
-    <button class="clear-btn" id="clearFiltersBtn">Clear Filters</button>
   </div>
 </div>
 <div class="metrics" id="metrics"></div>
@@ -128,6 +128,7 @@ function getFiltered() {
   let f = [...items];
   if (activeTab === 'favs') f = f.filter(d => getUD(d.n).fav);
   if (activeTab === 'tried') f = f.filter(d => getUD(d.n).tried);
+  if (activeTab === 'notes') f = f.filter(d => getUD(d.n).note);
   if (catFilter !== 'All') f = f.filter(d => d.catLabel === catFilter);
   if (typeFilter !== 'All') f = f.filter(d => d.typeLabel === typeFilter);
   if (brandFilter !== 'All') f = f.filter(d => d.b === brandFilter);
@@ -168,12 +169,15 @@ function renderFilters() {
     + '<select id="catSel"><option value="All">All Categories</option><option value="Flower"' + (catFilter==='Flower'?' selected':'') + '>Flower</option><option value="Vape"' + (catFilter==='Vape'?' selected':'') + '>Vape</option></select>'
     + '<select id="typeSel"><option value="All">All Types</option><option value="Indica"' + (typeFilter==='Indica'?' selected':'') + '>Indica</option><option value="Hybrid"' + (typeFilter==='Hybrid'?' selected':'') + '>Hybrid</option><option value="Sativa"' + (typeFilter==='Sativa'?' selected':'') + '>Sativa</option></select>'
     + '<select id="brandSel"><option value="All">Brand</option>' + brands.map(b => '<option value="' + esc(b) + '"' + (brandFilter===b?' selected':'') + '>' + esc(b) + '</option>').join('') + '</select>'
-    + '<label><input type="checkbox" id="dealChk"' + (dealOnly?' checked':'') + '> On Sale</label>';
+    + '<label><input type="checkbox" id="dealChk"' + (dealOnly?' checked':'') + '> On Sale</label>'
+    + ' <button class="clear-btn" id="clearFiltersBtn2" style="margin-left:4px">Clear Filters</button>';
   document.getElementById('searchInput').addEventListener('input', e => { search = e.target.value; render(); });
   document.getElementById('catSel').addEventListener('change', e => { catFilter = e.target.value; render(); });
   document.getElementById('typeSel').addEventListener('change', e => { typeFilter = e.target.value; render(); });
   document.getElementById('brandSel').addEventListener('change', e => { brandFilter = e.target.value; render(); });
   document.getElementById('dealChk').addEventListener('change', e => { dealOnly = e.target.checked; render(); });
+  const cf2 = document.getElementById('clearFiltersBtn2');
+  if (cf2) cf2.addEventListener('click', () => { search=''; catFilter='All'; typeFilter='All'; brandFilter='All'; dealOnly=false; render(); });
 }
 
 function renderHeader() {
@@ -336,11 +340,6 @@ document.getElementById('body').addEventListener('change', e => {
 });
 
 document.getElementById('exportBtn').addEventListener('click', exportCSV);
-
-document.getElementById('clearFiltersBtn').addEventListener('click', () => {
-  search = ''; catFilter = 'All'; typeFilter = 'All'; brandFilter = 'All'; dealOnly = false;
-  render();
-});
 
 // === INIT ===
 document.getElementById('lastUpdate').textContent = 'Last Refresh: ' + new Date().toLocaleString();
