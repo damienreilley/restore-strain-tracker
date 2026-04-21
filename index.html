@@ -119,7 +119,8 @@ function delUD(name, key) { if (userData[name]) { delete userData[name][key]; if
 const items = RAW_DATA.map(d => ({
   ...d, catLabel: d.c === 'Flower' ? 'Flower' : 'Vape',
   typeLabel: d.t === 'indica' ? 'Indica' : d.t === 'sativa' ? 'Sativa' : 'Hybrid',
-  discount: d.op > 0 ? Math.round((1 - d.p / d.op) * 100) : 0
+  discount: d.op > 0 ? Math.round((1 - d.p / d.op) * 100) : 0,
+  sn: parseStrain(d.n, d.b)
 }));
 
 const brands = [...new Set(items.map(d => d.b))].sort();
@@ -137,7 +138,7 @@ function getFiltered() {
   if (dealOnly) f = f.filter(d => d.d);
   if (search) {
     const s = search.toLowerCase();
-    f = f.filter(d => d.n.toLowerCase().includes(s) || d.b.toLowerCase().includes(s) || parseStrain(d.n, d.b).toLowerCase().includes(s));
+    f = f.filter(d => d.n.toLowerCase().includes(s) || d.b.toLowerCase().includes(s) || d.sn.toLowerCase().includes(s));
   }
   f.sort((a, b) => {
     let av = a[sortKey], bv = b[sortKey];
@@ -202,12 +203,13 @@ function renderFilters() {
 
 function renderHeader() {
   const cols = [
-    {k:'_fav',l:'★',w:'30px'},{k:'_strain',l:'Strain',w:'180px'},{k:'n',l:'Product',w:'200px'},
+    {k:'_fav',l:'★',w:'30px'},{k:'sn',l:'Strain',w:'180px'},
     {k:'catLabel',l:'Cat',w:'50px'},{k:'typeLabel',l:'Type',w:'55px'},{k:'b',l:'Brand',w:'100px'},
     {k:'p',l:'Price',w:'70px'},{k:'sz',l:'Size',w:'70px'},{k:'ta',l:'THCA%',w:'55px'},
     {k:'ps',l:'Score',w:'80px'},{k:'ca',l:'Cary%',w:'55px'},{k:'lm',l:'Lim%',w:'55px'},
     {k:'li',l:'Lin%',w:'50px'},{k:'my',l:'Myr%',w:'50px'},{k:'_terps',l:'Profile',w:'90px'},
-    {k:'_tried',l:'Tried',w:'40px'},{k:'_rate',l:'Rating',w:'60px'},{k:'_note',l:'Note',w:'45px'}
+    {k:'_tried',l:'Tried',w:'40px'},{k:'_rate',l:'Rating',w:'60px'},{k:'_note',l:'Note',w:'45px'},
+    {k:'n',l:'Product',w:'200px'}
   ];
   const hdr = document.getElementById('hdr');
   hdr.innerHTML = cols.map(c => {
@@ -237,8 +239,7 @@ function renderBody(filtered) {
 
     rows.push('<tr class="' + rowClass + '" data-idx="' + i + '">'
       + '<td><button class="star-btn" data-idx="' + i + '" data-action="fav" style="color:' + favColor + '">' + favStar + '</button></td>'
-      + '<td style="white-space:normal;max-width:180px;font-weight:600;color:#0f172a">' + esc(parseStrain(d.n, d.b)) + '</td>'
-      + '<td style="white-space:normal;max-width:200px;font-size:11px;color:#64748b">' + esc(d.n) + '</td>'
+      + '<td style="white-space:normal;max-width:180px;font-weight:600;color:#0f172a">' + esc(d.sn) + '</td>'
       + '<td><span class="cat-badge cat-' + d.c[0] + '">' + d.catLabel + '</span></td>'
       + '<td><span class="cat-badge type-' + d.t[0] + '">' + d.typeLabel + '</span></td>'
       + '<td style="color:#64748b">' + esc(d.b) + '</td>'
@@ -254,6 +255,7 @@ function renderBody(filtered) {
       + '<td><input type="checkbox" class="tried-chk" data-idx="' + i + '" data-action="tried"' + (ud.tried ? ' checked' : '') + '></td>'
       + '<td><div class="rate-wrap">' + rateHtml + '</div></td>'
       + '<td><button class="note-btn' + hasNote + '" data-idx="' + i + '" data-action="note">' + (ud.note ? '📝' : '+') + '</button></td>'
+      + '<td style="white-space:normal;max-width:200px;font-size:11px;color:#94a3b8">' + esc(d.n) + '</td>'
       + '</tr>'
     );
   }
