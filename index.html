@@ -53,6 +53,8 @@ tr.fav-row{background:#eff6ff!important}
 .rate-dot.filled{background:#f59e0b;border-color:#f59e0b}
 .note-btn{cursor:pointer;font-size:11px;background:none;border:1px solid #cbd5e1;border-radius:4px;color:#64748b;padding:1px 6px}
 .note-btn.has-note{background:#dbeafe;color:#1e40af;border-color:#93c5fd}
+.list-btn{cursor:pointer;font-size:11px;background:none;border:1px solid #cbd5e1;border-radius:4px;color:#64748b;padding:1px 6px}
+.list-btn.in-list{background:#d1fae5;color:#065f46;border-color:#6ee7b7}
 .metrics{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .metric{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 14px;min-width:100px}
 .metric .label{font-size:10px;color:#94a3b8;margin-bottom:2px}
@@ -85,6 +87,7 @@ tr.fav-row{background:#eff6ff!important}
   <div class="tab" data-tab="tried">Tried</div>
   <div class="tab" data-tab="notes">Notes</div>
   <div class="tab" data-tab="rated">Ratings</div>
+  <div class="tab" data-tab="mylist">My List <span id="listCount" style="font-size:10px;background:#3b82f6;color:#fff;border-radius:8px;padding:1px 5px;margin-left:4px;display:none">0</span></div>
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
     <button class="export-btn" id="exportBtn">Export CSV</button>
   </div>
@@ -132,6 +135,7 @@ function getFiltered() {
   if (activeTab === 'tried') f = f.filter(d => getUD(d.n).tried);
   if (activeTab === 'notes') f = f.filter(d => getUD(d.n).note);
   if (activeTab === 'rated') f = f.filter(d => getUD(d.n).rating);
+  if (activeTab === 'mylist') f = f.filter(d => getUD(d.n).listed);
   if (catFilter !== 'All') f = f.filter(d => d.catLabel === catFilter);
   if (typeFilter !== 'All') f = f.filter(d => d.typeLabel === typeFilter);
   if (brandFilter !== 'All') f = f.filter(d => d.b === brandFilter);
@@ -203,7 +207,7 @@ function renderFilters() {
 
 function renderHeader() {
   const cols = [
-    {k:'_fav',l:'★',w:'30px'},{k:'sn',l:'Strain',w:'180px'},
+    {k:'_fav',l:'★',w:'30px'},{k:'_list',l:'List',w:'35px'},{k:'sn',l:'Strain',w:'180px'},
     {k:'catLabel',l:'Cat',w:'50px'},{k:'typeLabel',l:'Type',w:'55px'},{k:'b',l:'Brand',w:'100px'},
     {k:'p',l:'Price',w:'70px'},{k:'sz',l:'Size',w:'70px'},{k:'ta',l:'THCA%',w:'55px'},
     {k:'ps',l:'Score',w:'80px'},{k:'ca',l:'Cary%',w:'55px'},{k:'lm',l:'Lim%',w:'55px'},
@@ -232,6 +236,8 @@ function renderBody(filtered) {
     const rating = ud.rating || 0;
     const hasNote = ud.note ? ' has-note' : '';
 
+    const inList = ud.listed ? ' in-list' : '';
+
     let rateHtml = '';
     for (let r = 1; r <= 5; r++) {
       rateHtml += '<div class="rate-dot' + (r <= rating ? ' filled' : '') + '" data-idx="' + i + '" data-rate="' + r + '"></div>';
@@ -239,6 +245,7 @@ function renderBody(filtered) {
 
     rows.push('<tr class="' + rowClass + '" data-idx="' + i + '">'
       + '<td><button class="star-btn" data-idx="' + i + '" data-action="fav" style="color:' + favColor + '">' + favStar + '</button></td>'
+      + '<td><button class="list-btn' + inList + '" data-idx="' + i + '" data-action="list">' + (ud.listed ? '✓' : '+') + '</button></td>'
       + '<td style="white-space:normal;max-width:180px;font-weight:600;color:#0f172a">' + esc(d.sn) + '</td>'
       + '<td><span class="cat-badge cat-' + d.c[0] + '">' + d.catLabel + '</span></td>'
       + '<td><span class="cat-badge type-' + d.t[0] + '">' + d.typeLabel + '</span></td>'
@@ -302,8 +309,36 @@ function render() {
   renderHeader();
   renderMetrics(filtered);
   renderBody(filtered);
+  updateListCount();
+  // Show clear list button only on mylist tab
+  let clb = document.getElementById('clearListBtn');
+  if (activeTab === 'mylist' && !clb) {
+    const m = document.getElementById('metrics');
+    const btn = document.createElement('button');
+    btn.id = 'clearListBtn';
+    btn.className = 'clear-btn';
+    btn.style.marginLeft = '8px';
+    btn.textContent = 'Clear List';
+    btn.addEventListener('click', () => {
+      if (confirm('Remove all items from My List?')) {
+        Object.keys(userData).forEach(k => { if (userData[k].listed) delUD(k, 'listed'); });
+        updateListCount();
+        render();
+      }
+    });
+    m.appendChild(btn);
+  }
   const si = document.getElementById('searchInput');
   if (search && si) { si.focus(); si.setSelectionRange(search.length, search.length); }
+}
+
+function updateListCount() {
+  const count = Object.values(userData).filter(u => u.listed).length;
+  const el = document.getElementById('listCount');
+  if (el) {
+    el.textContent = count;
+    el.style.display = count > 0 ? 'inline' : 'none';
+  }
 }
 
 // === EVENT DELEGATION ===
@@ -332,6 +367,12 @@ document.getElementById('body').addEventListener('click', e => {
 
   if (el.dataset.action === 'fav') {
     setUD(name, 'fav', !getUD(name).fav);
+    render();
+    return;
+  }
+  if (el.dataset.action === 'list') {
+    if (getUD(name).listed) { delUD(name, 'listed'); } else { setUD(name, 'listed', true); }
+    updateListCount();
     render();
     return;
   }
